@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>LoL Champion Tracker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+    }
+    .table-section {
+      width: 48%;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      background-color: #eee;
+    }
+    img {
+      width: 32px;
+      height: 32px;
+    }
+    h2 {
+      text-align: center;
+    }
+    #export-btn {
+      margin-bottom: 20px;
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>League of Legends Champion Tracker</h1>
+  <button id="export-btn">📁 Export als CSV</button>
+
+  <div class="container">
+    <div class="table-section">
+      <h2>Noch offen</h2>
+      <table id="not-done-table">
+        <thead>
+          <tr>
+            <th>Icon</th>
+            <th>Name</th>
+            <th>Rollen</th>
+            <th>Erledigt</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="table-section">
+      <h2>Erledigt</h2>
+      <table id="done-table">
+        <thead>
+          <tr>
+            <th>Icon</th>
+            <th>Name</th>
+            <th>Rollen</th>
+            <th>Erledigt</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const version = "15.13.1";
+    const dataUrl = `https://ddragon.leagueoflegends.com/cdn/${version}/data/de_DE/champion.json`;
+
+    function loadState() {
+      return JSON.parse(localStorage.getItem("championStatus") || "{}")
+    }
+
+    function saveState(state) {
+      localStorage.setItem("championStatus", JSON.stringify(state));
+    }
+
+    async function loadChampions() {
+      const response = await fetch(dataUrl);
+      const json = await response.json();
+      const champions = Object.values(json.data);
+      const state = loadState();
+
+      const notDoneTbody = document.querySelector("#not-done-table tbody");
+      const doneTbody = document.querySelector("#done-table tbody");
+
+      champions.sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const champ of champions) {
+        const isDone = state[champ.id] || false;
+        const row = createRow(champ, isDone, state);
+
+        if (isDone) {
+          doneTbody.appendChild(row);
+        } else {
+          notDoneTbody.appendChild(row);
+        }
+      }
+
+      document.getElementById("export-btn").addEventListener("click", () => exportCSV(champions, state));
+    }
+
+    function createRow(champ, isDone, state) {
+      const tr = document.createElement("tr");
+
+      const iconTd = document.createElement("td");
+      const img = document.createElement("img");
+      img.src = `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champ.id}.png`;
+      iconTd.appendChild(img);
+
+      const nameTd = document.createElement("td");
+      nameTd.textContent = champ.name;
+
+      const tagsTd = document.createElement("td");
+      tagsTd.textContent = champ.tags.join(", ");
+
+      const checkboxTd = document.createElement("td");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = isDone;
+      checkbox.addEventListener("change", () => {
+        state[champ.id] = checkbox.checked;
+        saveState(state);
+        location.reload();
+      });
+      checkboxTd.appendChild(checkbox);
+
+      tr.appendChild(iconTd);
+      tr.appendChild(nameTd);
+      tr.appendChild(tagsTd);
+      tr.appendChild(checkboxTd);
+
+      return tr;
+    }
+
+    function exportCSV(champions, state) {
+      let csvContent = "Name,Rollen,Status\n";
+
+      for (const champ of champions) {
+        const name = champ.name;
+        const tags = champ.tags.join("/");
+        const status = state[champ.id] ? "Erledigt" : "Offen";
+        csvContent += `"${name}","${tags}","${status}"\n`;
+      }
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "champions_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    loadChampions();
+  </script>
+</body>
+</html>
