@@ -138,16 +138,17 @@
 
 <div class="main-container">
   <!-- Champion Pool -->
-  <div class="champion-pool">
-    <div class="section-title">Champion Pool</div>
-    <div class="grid" id="championPool"></div>
-  </div>
+<div class="champion-pool">
+  <div class="section-title">Champion Pool</div>
+  <div id="pool-counter" style="text-align:center; margin-bottom: 10px;"></div>
+  <div class="grid" id="championPool"></div>
+</div>
 
   <!-- Done Grid -->
-  <div class="done-grid">
-    <div class="section-title">Champion Tracked</div>
-    <div class="grid" id="doneGrid"></div>
-  </div>
+<div class="done-grid">
+  <div class="section-title">Champion Tracked</div>
+  <div id="done-counter" style="text-align:center; margin-bottom: 10px;"></div>
+  <div class="grid" id="doneGrid"></div>
 </div>
 
 <script>
@@ -175,8 +176,13 @@ async function loadChampions() {
 function renderGrids() {
   const pool = document.getElementById('championPool');
   const done = document.getElementById('doneGrid');
+  const poolCounter = document.getElementById('pool-counter');
+  const doneCounter = document.getElementById('done-counter');
   pool.innerHTML = '';
   done.innerHTML = '';
+
+  let poolCount = 0;
+  let doneCount = 0;
 
   championsData.forEach(champ => {
     const div = document.createElement('div');
@@ -193,14 +199,20 @@ function renderGrids() {
 
     if (state[champ.id]) {
       done.appendChild(div);
+      doneCount++;
     } else {
       pool.appendChild(div);
+      poolCount++;
     }
   });
+
+  poolCounter.textContent = `Counted: ${poolCount}`;
+  doneCounter.textContent = `Counted: ${doneCount}`;
 
   addDropListeners(pool, false);
   addDropListeners(done, true);
 }
+
 
 function addDropListeners(container, isDone) {
   container.addEventListener("dragover", e => e.preventDefault());
